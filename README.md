@@ -1,1 +1,1 @@
-# network-file-server
+# mainly just for learning & practicing Go
