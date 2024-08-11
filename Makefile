@@ -1,10 +1,10 @@
-run: main.go
+run:
 	go run main.go
 
-test: main_test.go
-	go test
+test:
+	go test ./t
 
 clean:
-	rm -r fileserver/*
+	rm -r virtual/*
 
 .PHONY: run test clean
