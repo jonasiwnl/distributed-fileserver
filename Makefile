@@ -1,5 +1,8 @@
-run:
-	go run main.go
+ctrl:
+	go run main.go -controller
+
+fs:
+	go run main.go -flagserver
 
 test:
 	go test ./t
@@ -7,4 +10,4 @@ test:
 clean:
 	rm -r virtual/*
 
-.PHONY: run test clean
+.PHONY: ctrl fs test clean

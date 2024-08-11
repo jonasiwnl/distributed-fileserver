@@ -17,7 +17,8 @@ var client *rpc.Client
 
 func TestMain(m *testing.M) {
 	quit := make(chan bool, 1)
-	go fileserver.Start(quit)
+	sixtyFourMB := int64(64 * 1024 * 1024)
+	go fileserver.Start(sixtyFourMB, quit)
 
 	var err error
 	client, err = rpc.Dial("tcp", "localhost"+fileserver.PORT)

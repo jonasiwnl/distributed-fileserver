@@ -6,4 +6,5 @@
 - [x] single machine fileserver
 - [ ] controller for storing metadata
 - [ ] client code
+- [ ] concurrency handling
 - [ ] file chunking
