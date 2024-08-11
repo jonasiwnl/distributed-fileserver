@@ -1,23 +1,25 @@
-package fileserver
+package controller
 
 import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"time"
 )
 
 const (
-	PORT      = ":2122"
-	DIRECTORY = "virtual/"
+	PORT = ":2121"
 )
 
-// Used by RPC handlers in fileops.go
-type FileServer struct{}
+type FileMetadata struct {
+	Name       string
+	Size       int64
+	Created    time.Time
+	Modified   time.Time
+	ChunkAddrs []string
+}
 
 func Start(quit chan bool) {
-	fileServer := new(FileServer)
-	rpc.Register(fileServer)
-
 	listener, err := net.Listen("tcp", PORT)
 	if err != nil {
 		fmt.Printf("Couldn't listen on port %s: %s\n", PORT, err)
