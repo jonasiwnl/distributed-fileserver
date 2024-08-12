@@ -2,7 +2,7 @@ ctrl:
 	go run main.go -controller
 
 fs:
-	go run main.go -flagserver
+	go run main.go -fileserver
 
 test:
 	go test ./t
