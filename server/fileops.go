@@ -1,4 +1,4 @@
-package fileserver
+package server
 
 import (
 	"io/fs"

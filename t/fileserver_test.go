@@ -1,7 +1,7 @@
 // As this is a side project, these tests aren't super extensive.
 // Just checking that there aren't horrible errors.
 
-package fileserver_test
+package distributed_fileserver_test
 
 import (
 	"net/rpc"
@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jonasiwnl/distributed-fileserver/v2/fileserver"
+	"github.com/jonasiwnl/distributed-fileserver/v2/server"
 )
 
 // Share global client for all tests.
@@ -18,10 +18,10 @@ var client *rpc.Client
 func TestMain(m *testing.M) {
 	quit := make(chan bool, 1)
 	sixtyFourMB := int64(64 * 1024 * 1024)
-	go fileserver.Start(sixtyFourMB, quit)
+	go server.StartFileServer(sixtyFourMB, quit)
 
 	var err error
-	client, err = rpc.Dial("tcp", "localhost"+fileserver.PORT)
+	client, err = rpc.Dial("tcp", "localhost"+server.FILESERVERPORT)
 	if err == nil {
 		m.Run()
 	}
@@ -31,9 +31,9 @@ func TestMain(m *testing.M) {
 
 func TestDir(t *testing.T) {
 	testDir := "testdir"
-	directoryPath := filepath.Join(fileserver.DIRECTORY, testDir)
+	directoryPath := filepath.Join(server.DIRECTORY, testDir)
 
-	args := &fileserver.DirArgs{Path: testDir, Mode: 0755}
+	args := &server.DirArgs{Path: testDir, Mode: 0755}
 	var reply bool
 	err := client.Call("FileServer.MakeDirectory", args, &reply)
 	if err != nil {
@@ -59,9 +59,9 @@ func TestDir(t *testing.T) {
 
 func TestFile(t *testing.T) {
 	testFile := "testfile"
-	filePath := filepath.Join(fileserver.DIRECTORY, testFile)
+	filePath := filepath.Join(server.DIRECTORY, testFile)
 
-	args := &fileserver.FileArgs{Path: testFile, Data: []byte("test"), Mode: 0644}
+	args := &server.FileArgs{Path: testFile, Data: []byte("test"), Mode: 0644}
 	var reply bool
 	err := client.Call("FileServer.WriteFile", args, &reply)
 	if err != nil {
@@ -89,19 +89,19 @@ func TestListDir(t *testing.T) {
 
 	var mkDirReply bool
 
-	testDirArgs1 := &fileserver.DirArgs{Path: testDir1, Mode: 0755}
+	testDirArgs1 := &server.DirArgs{Path: testDir1, Mode: 0755}
 	client.Call("FileServer.MakeDirectory", testDirArgs1, &mkDirReply)
-	testDirArgs2 := &fileserver.DirArgs{Path: testDir2, Mode: 0755}
+	testDirArgs2 := &server.DirArgs{Path: testDir2, Mode: 0755}
 	client.Call("FileServer.MakeDirectory", testDirArgs2, &mkDirReply)
-	testFileArgs1 := &fileserver.FileArgs{Path: filepath.Join(testDir1, testFile1), Data: []byte("test1"), Mode: 0644}
+	testFileArgs1 := &server.FileArgs{Path: filepath.Join(testDir1, testFile1), Data: []byte("test1"), Mode: 0644}
 	client.Call("FileServer.WriteFile", testFileArgs1, &mkDirReply)
-	testFileArgs2 := &fileserver.FileArgs{Path: filepath.Join(testDir1, testFile2), Data: []byte("test2"), Mode: 0644}
+	testFileArgs2 := &server.FileArgs{Path: filepath.Join(testDir1, testFile2), Data: []byte("test2"), Mode: 0644}
 	client.Call("FileServer.WriteFile", testFileArgs2, &mkDirReply)
-	testFileArgs3 := &fileserver.FileArgs{Path: testFile3, Data: []byte("test3"), Mode: 0644}
+	testFileArgs3 := &server.FileArgs{Path: testFile3, Data: []byte("test3"), Mode: 0644}
 	client.Call("FileServer.WriteFile", testFileArgs3, &mkDirReply)
 
-	var listDirReply []fileserver.DirEntry
-	listDirArgs := &fileserver.ListArgs{Path: ""}
+	var listDirReply []server.DirEntry
+	listDirArgs := &server.ListArgs{Path: ""}
 	err := client.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
 	if err != nil {
 		t.Fatal("listing directory: ", err)
@@ -128,7 +128,7 @@ func TestListDir(t *testing.T) {
 		t.Fatal("missing entry.")
 	}
 
-	listDirArgs = &fileserver.ListArgs{Path: testDir1}
+	listDirArgs = &server.ListArgs{Path: testDir1}
 	err = client.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
 	if err != nil {
 		t.Fatal("listing directory: ", err)

@@ -6,8 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/jonasiwnl/distributed-fileserver/v2/controller"
-	"github.com/jonasiwnl/distributed-fileserver/v2/fileserver"
+	"github.com/jonasiwnl/distributed-fileserver/v2/server"
 )
 
 func main() {
@@ -27,9 +26,9 @@ func main() {
 	}()
 
 	if *flagController {
-		controller.Start(quit)
+		server.StartControllerServer(quit)
 	} else if *flagFileServer {
 		sixtyFourMB := int64(64 * 1024 * 1024)
-		fileserver.Start(sixtyFourMB, quit)
+		server.StartFileServer(sixtyFourMB, quit)
 	}
 }
