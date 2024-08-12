@@ -22,6 +22,11 @@ const (
 	DISCONNECT
 )
 
+type FileServerEntry struct {
+	Addr string
+	Data FileServerData
+}
+
 type FileServerData struct {
 	SizeUsed int64
 	Capacity int64
@@ -41,10 +46,11 @@ type FileMetadata struct {
 }
 
 type Controller struct {
-	FileServers map[string]FileServerData
+	AddrToIdx   map[string]int
+	FileServers []FileServerEntry
 }
 
-func (c *Controller) GetFileServers(args struct{}, reply *map[string]FileServerData) error {
+func (c *Controller) GetFileServers(args struct{}, reply *[]FileServerEntry) error {
 	*reply = c.FileServers
 	return nil
 }
@@ -94,12 +100,22 @@ func (c *Controller) listenForFileServers(quit chan bool) {
 
 			switch fileServerMessage.Type {
 			case REGISTER:
-				c.FileServers[remoteAddr.String()] = fileServerMessage.Data
 				fmt.Println("Registering fileserver at address: ", remoteAddr.String())
+				c.FileServers = append(c.FileServers, FileServerEntry{Addr: remoteAddr.String(), Data: fileServerMessage.Data})
+				c.AddrToIdx[remoteAddr.String()] = len(c.FileServers) - 1
 			case HEARTBEAT:
 				// TODO: a heartbeat would be nice.
 			case DISCONNECT:
-				delete(c.FileServers, remoteAddr.String())
+				fmt.Println("Disconnecting fileserver at address: ", remoteAddr.String())
+				// Find index of fileserver to remove.
+				idx := c.AddrToIdx[remoteAddr.String()]
+				// Swap the last element to the index.
+				c.FileServers[idx] = c.FileServers[len(c.FileServers)-1]
+				// Update the index of the swapped element.
+				c.AddrToIdx[c.FileServers[idx].Addr] = idx
+				// Remove the last element.
+				c.FileServers = c.FileServers[:len(c.FileServers)-1]
+				delete(c.AddrToIdx, remoteAddr.String())
 			}
 		}
 	}
