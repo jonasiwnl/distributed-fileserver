@@ -1,4 +1,4 @@
-# mainly just for learning & practicing Go
+# An implementation of a distributed filesystem, built for personal learning.
 ### Design
 <img src="images/design.png" width="500px" />
 
