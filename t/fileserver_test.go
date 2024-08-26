@@ -4,7 +4,6 @@
 package distributed_fileserver_test
 
 import (
-	"net/rpc"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,30 +11,13 @@ import (
 	"github.com/jonasiwnl/distributed-fileserver/v2/server"
 )
 
-// Share global client for all tests.
-var client *rpc.Client
-
-func TestMain(m *testing.M) {
-	quit := make(chan bool, 1)
-	sixtyFourMB := int64(64 * 1024 * 1024)
-	go server.StartFileServer(sixtyFourMB, quit)
-
-	var err error
-	client, err = rpc.Dial("tcp", "localhost"+server.FILESERVERPORT)
-	if err == nil {
-		m.Run()
-	}
-	client.Close()
-	quit <- true
-}
-
 func TestDir(t *testing.T) {
 	testDir := "testdir"
 	directoryPath := filepath.Join(server.DIRECTORY, testDir)
 
 	args := &server.DirArgs{Path: testDir, Mode: 0755}
 	var reply bool
-	err := client.Call("FileServer.MakeDirectory", args, &reply)
+	err := FileServerClient.Call("FileServer.MakeDirectory", args, &reply)
 	if err != nil {
 		t.Fatal("making directory: ", err)
 	}
@@ -43,7 +25,7 @@ func TestDir(t *testing.T) {
 		t.Fatal("directory not created")
 	}
 
-	err = client.Call("FileServer.RemoveDirectory", args, &reply)
+	err = FileServerClient.Call("FileServer.RemoveDirectory", args, &reply)
 	if err != nil {
 		t.Fatal("removing directory: ", err)
 	}
@@ -51,7 +33,7 @@ func TestDir(t *testing.T) {
 		t.Fatal("directory not removed")
 	}
 
-	err = client.Call("FileServer.RemoveDirectory", args, &reply)
+	err = FileServerClient.Call("FileServer.RemoveDirectory", args, &reply)
 	if err != nil {
 		t.Fatal("error removing non-existent directory: ", err)
 	}
@@ -63,7 +45,7 @@ func TestFile(t *testing.T) {
 
 	args := &server.FileArgs{Path: testFile, Data: []byte("test"), Mode: 0644}
 	var reply bool
-	err := client.Call("FileServer.WriteFile", args, &reply)
+	err := FileServerClient.Call("FileServer.WriteFile", args, &reply)
 	if err != nil {
 		t.Fatal("writing file: ", err)
 	}
@@ -71,7 +53,7 @@ func TestFile(t *testing.T) {
 		t.Fatal("file not created")
 	}
 
-	err = client.Call("FileServer.RemoveFile", args, &reply)
+	err = FileServerClient.Call("FileServer.RemoveFile", args, &reply)
 	if err != nil {
 		t.Fatal("removing file: ", err)
 	}
@@ -90,19 +72,19 @@ func TestListDir(t *testing.T) {
 	var mkDirReply bool
 
 	testDirArgs1 := &server.DirArgs{Path: testDir1, Mode: 0755}
-	client.Call("FileServer.MakeDirectory", testDirArgs1, &mkDirReply)
+	FileServerClient.Call("FileServer.MakeDirectory", testDirArgs1, &mkDirReply)
 	testDirArgs2 := &server.DirArgs{Path: testDir2, Mode: 0755}
-	client.Call("FileServer.MakeDirectory", testDirArgs2, &mkDirReply)
+	FileServerClient.Call("FileServer.MakeDirectory", testDirArgs2, &mkDirReply)
 	testFileArgs1 := &server.FileArgs{Path: filepath.Join(testDir1, testFile1), Data: []byte("test1"), Mode: 0644}
-	client.Call("FileServer.WriteFile", testFileArgs1, &mkDirReply)
+	FileServerClient.Call("FileServer.WriteFile", testFileArgs1, &mkDirReply)
 	testFileArgs2 := &server.FileArgs{Path: filepath.Join(testDir1, testFile2), Data: []byte("test2"), Mode: 0644}
-	client.Call("FileServer.WriteFile", testFileArgs2, &mkDirReply)
+	FileServerClient.Call("FileServer.WriteFile", testFileArgs2, &mkDirReply)
 	testFileArgs3 := &server.FileArgs{Path: testFile3, Data: []byte("test3"), Mode: 0644}
-	client.Call("FileServer.WriteFile", testFileArgs3, &mkDirReply)
+	FileServerClient.Call("FileServer.WriteFile", testFileArgs3, &mkDirReply)
 
 	var listDirReply []server.DirEntry
 	listDirArgs := &server.ListArgs{Path: ""}
-	err := client.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
+	err := FileServerClient.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
 	if err != nil {
 		t.Fatal("listing directory: ", err)
 	}
@@ -129,7 +111,7 @@ func TestListDir(t *testing.T) {
 	}
 
 	listDirArgs = &server.ListArgs{Path: testDir1}
-	err = client.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
+	err = FileServerClient.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
 	if err != nil {
 		t.Fatal("listing directory: ", err)
 	}
@@ -153,7 +135,7 @@ func TestListDir(t *testing.T) {
 	}
 
 	// Clean up files
-	client.Call("FileServer.RemoveDirectory", testDirArgs1, &mkDirReply)
-	client.Call("FileServer.RemoveDirectory", testDirArgs2, &mkDirReply)
-	client.Call("FileServer.RemoveFile", testFileArgs3, &mkDirReply)
+	FileServerClient.Call("FileServer.RemoveDirectory", testDirArgs1, &mkDirReply)
+	FileServerClient.Call("FileServer.RemoveDirectory", testDirArgs2, &mkDirReply)
+	FileServerClient.Call("FileServer.RemoveFile", testFileArgs3, &mkDirReply)
 }

@@ -50,6 +50,13 @@ type Controller struct {
 	FileServers []FileServerEntry
 }
 
+func NewController() *Controller {
+	return &Controller{
+		AddrToIdx:   make(map[string]int),
+		FileServers: make([]FileServerEntry, 0),
+	}
+}
+
 func (c *Controller) GetFileServers(args struct{}, reply *[]FileServerEntry) error {
 	*reply = c.FileServers
 	return nil
@@ -122,7 +129,7 @@ func (c *Controller) listenForFileServers(quit chan bool) {
 }
 
 func StartControllerServer(quit chan bool) {
-	controller := new(Controller)
+	controller := NewController()
 	rpc.Register(controller)
 
 	listener, err := net.Listen("tcp", CONTROLLERPORT)
