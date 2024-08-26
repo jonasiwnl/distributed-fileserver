@@ -19,7 +19,7 @@ func TestDir(t *testing.T) {
 	var reply bool
 	err := FileServerClient.Call("FileServer.MakeDirectory", args, &reply)
 	if err != nil {
-		t.Fatal("making directory: ", err)
+		t.Fatal("making directory:", err)
 	}
 	if _, err := os.Stat(directoryPath); os.IsNotExist(err) || !reply {
 		t.Fatal("directory not created")
@@ -27,7 +27,7 @@ func TestDir(t *testing.T) {
 
 	err = FileServerClient.Call("FileServer.RemoveDirectory", args, &reply)
 	if err != nil {
-		t.Fatal("removing directory: ", err)
+		t.Fatal("removing directory:", err)
 	}
 	if _, err := os.Stat(directoryPath); err == nil || !reply {
 		t.Fatal("directory not removed")
@@ -35,7 +35,7 @@ func TestDir(t *testing.T) {
 
 	err = FileServerClient.Call("FileServer.RemoveDirectory", args, &reply)
 	if err != nil {
-		t.Fatal("error removing non-existent directory: ", err)
+		t.Fatal("error removing non-existent directory:", err)
 	}
 }
 
@@ -47,7 +47,7 @@ func TestFile(t *testing.T) {
 	var reply bool
 	err := FileServerClient.Call("FileServer.WriteFile", args, &reply)
 	if err != nil {
-		t.Fatal("writing file: ", err)
+		t.Fatal("writing file:", err)
 	}
 	if _, err := os.Stat(filePath); os.IsNotExist(err) || !reply {
 		t.Fatal("file not created")
@@ -55,7 +55,7 @@ func TestFile(t *testing.T) {
 
 	err = FileServerClient.Call("FileServer.RemoveFile", args, &reply)
 	if err != nil {
-		t.Fatal("removing file: ", err)
+		t.Fatal("removing file:", err)
 	}
 	if _, err := os.Stat(filePath); err == nil || !reply {
 		t.Fatal("file not removed")
@@ -86,7 +86,7 @@ func TestListDir(t *testing.T) {
 	listDirArgs := &server.ListArgs{Path: ""}
 	err := FileServerClient.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
 	if err != nil {
-		t.Fatal("listing directory: ", err)
+		t.Fatal("listing directory:", err)
 	}
 	if len(listDirReply) != 3 {
 		t.Fatal("incorrect number of entries")
@@ -113,7 +113,7 @@ func TestListDir(t *testing.T) {
 	listDirArgs = &server.ListArgs{Path: testDir1}
 	err = FileServerClient.Call("FileServer.ListDirectory", listDirArgs, &listDirReply)
 	if err != nil {
-		t.Fatal("listing directory: ", err)
+		t.Fatal("listing directory:", err)
 	}
 	if len(listDirReply) != 2 {
 		t.Fatal("incorrect number of entries")

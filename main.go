@@ -9,6 +9,11 @@ import (
 	"github.com/jonasiwnl/distributed-fileserver/v2/server"
 )
 
+const (
+	CONTROLLERPORT = ":2120"
+	FILESERVERPORT = ":2125"
+)
+
 func main() {
 	flagController := flag.Bool("controller", false, "Start controller server.")
 	flagFileServer := flag.Bool("fileserver", false, "Start fileserver.")
@@ -26,9 +31,9 @@ func main() {
 	}()
 
 	if *flagController {
-		server.StartControllerServer(quit)
+		server.StartControllerServer(CONTROLLERPORT, quit)
 	} else if *flagFileServer {
 		sixtyFourMB := int64(64 * 1024 * 1024)
-		server.StartFileServer(sixtyFourMB, quit)
+		server.StartFileServer(FILESERVERPORT, sixtyFourMB, quit)
 	}
 }

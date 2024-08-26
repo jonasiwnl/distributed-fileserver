@@ -9,25 +9,24 @@ import (
 )
 
 const (
-	FILESERVERPORT = ":2125"
-	CTRLJOINPORT   = ":9998"
-	DIRECTORY      = "virtual/"
+	CTRLJOINPORT = ":9998"
+	DIRECTORY    = "virtual/"
 )
 
 type FileServer struct{}
 
-func StartFileServer(capacity int64, quit chan bool) {
+func StartFileServer(port string, capacity int64, quit chan bool) {
 	fileServer := new(FileServer)
 	rpc.Register(fileServer)
 
-	listener, err := net.Listen("tcp", FILESERVERPORT)
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
-		fmt.Printf("Couldn't listen on port %s: %s\n", FILESERVERPORT, err)
+		fmt.Printf("Couldn't listen on port %s: %s\n", port, err)
 		return
 	}
 	defer listener.Close()
 
-	fmt.Printf("Fileserver listening on port %s\n", FILESERVERPORT)
+	fmt.Printf("Fileserver listening on port %s\n", port)
 
 	// Let controller know we're here
 	var buffer bytes.Buffer
@@ -53,29 +52,33 @@ func StartFileServer(capacity int64, quit chan bool) {
 	}
 	// TODO: listen for ACK?
 
+	// This goroutine cleans everything up when we hear the quit signal.
+	go func() {
+		// Wait for quit signal
+		<-quit
+
+		// Let controller know we're leaving
+		buffer.Reset()
+		encoder = gob.NewEncoder(&buffer)
+		message = FileServerMessage{DISCONNECT, FileServerData{0, 0}}
+		err = encoder.Encode(message)
+		if err != nil {
+			fmt.Println("Error encoding disconnect message: ", err)
+			return
+		}
+		conn.Write([]byte(buffer.Bytes()))
+
+		listener.Close()
+	}()
+
 	// Finally, just listen for file operations
 	for {
-		select {
-		case <-quit:
-			// Let controller know we're leaving
-			buffer.Reset()
-			encoder = gob.NewEncoder(&buffer)
-			message = FileServerMessage{DISCONNECT, FileServerData{0, 0}}
-			err = encoder.Encode(message)
-			if err != nil {
-				fmt.Println("Error encoding disconnect message: ", err)
-				return
-			}
-			conn.Write([]byte(buffer.Bytes()))
-			return
-		default:
-			conn, err := listener.Accept()
-			if err != nil {
-				fmt.Println("Error accepting connection: ", err)
-				break
-			}
-
-			go rpc.ServeConn(conn)
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err)
+			break
 		}
+
+		go rpc.ServeConn(conn)
 	}
 }

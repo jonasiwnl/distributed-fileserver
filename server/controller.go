@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-const (
-	CONTROLLERPORT = ":2120"
-)
-
 type FileServerMessageType int
 
 const (
@@ -128,33 +124,33 @@ func (c *Controller) listenForFileServers(quit chan bool) {
 	}
 }
 
-func StartControllerServer(quit chan bool) {
+func StartControllerServer(port string, quit chan bool) {
 	controller := NewController()
 	rpc.Register(controller)
 
-	listener, err := net.Listen("tcp", CONTROLLERPORT)
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
-		fmt.Printf("Couldn't listen on port %s: %s\n", CONTROLLERPORT, err)
+		fmt.Printf("Couldn't listen on port %s: %s\n", port, err)
 		return
 	}
 	defer listener.Close()
 
-	fmt.Printf("Controller listening on port %s\n", CONTROLLERPORT)
+	fmt.Printf("Controller listening on port %s\n", port)
 
 	go controller.listenForFileServers(quit)
 
-	for {
-		select {
-		case <-quit:
-			return
-		default:
-			conn, err := listener.Accept()
-			if err != nil {
-				fmt.Println("Error accepting connection: ", err)
-				break
-			}
+	go func() {
+		<-quit
+		listener.Close()
+	}()
 
-			go rpc.ServeConn(conn)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err)
+			break
 		}
+
+		go rpc.ServeConn(conn)
 	}
 }
