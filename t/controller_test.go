@@ -63,3 +63,7 @@ func TestGetFileServers(t *testing.T) {
 		t.Fatal("expected 1 file server after disconnect, got", len(getFileServersResponse))
 	}
 }
+
+func TestAddFile(t *testing.T) {
+	FileServerClient.Call("FileServer.AddFile", server.AddFileArgs{Name: "testfile", Size: 1024}, nil)
+}

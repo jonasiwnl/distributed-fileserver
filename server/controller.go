@@ -33,6 +33,16 @@ type FileServerMessage struct {
 	Data FileServerData
 }
 
+type AddFileArgs struct {
+	Name string
+	Size int64
+}
+
+type AddFileReply struct {
+	Success bool
+	fileServerAddr string
+}
+
 type FileMetadata struct {
 	Name       string
 	Size       int64
@@ -60,6 +70,27 @@ func (c *Controller) GetFileServers(args struct{}, reply *[]FileServerEntry) err
 
 // TODO
 func (c *Controller) FindFile(args struct{}, reply *FileMetadata) error {
+	return nil
+}
+
+func (c *Controller) AddFile(args AddFileArgs, reply *AddFileReply) error {
+	// Find the file server with the most space. I'm aware this isn't
+	// the best algorithm but it works for now.
+	var maxSpace int64 = 0
+	var maxSpaceIdx int = -1
+	for i, fileServer := range c.FileServers {
+		if fileServer.Data.Capacity - fileServer.Data.SizeUsed > maxSpace {
+			maxSpace = fileServer.Data.Capacity - fileServer.Data.SizeUsed
+			maxSpaceIdx = i
+		}
+	}
+
+	if maxSpaceIdx == -1 {
+		reply.Success = false
+	} else {
+		reply.Success = true
+		reply.fileServerAddr = c.FileServers[maxSpaceIdx].Addr
+	}
 	return nil
 }
 
