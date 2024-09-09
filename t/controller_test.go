@@ -64,6 +64,41 @@ func TestGetFileServers(t *testing.T) {
 	}
 }
 
-func TestAddFile(t *testing.T) {
-	FileServerClient.Call("FileServer.AddFile", server.AddFileArgs{Name: "testfile", Size: 1024}, nil)
+func TestAddAndFindFile(t *testing.T) {
+	getFileServersResponse := []server.FileServerEntry{}
+	err := ControllerClient.Call("Controller.GetFileServers", struct{}{}, &getFileServersResponse)
+	if err != nil {
+		t.Fatal("getting file servers: ", err)
+	}
+
+	var reply server.AddFileReply
+	err = ControllerClient.Call("Controller.AddFile", server.AddFileArgs{Name: "testfile", Size: 1024}, &reply)
+	if err != nil {
+		t.Fatal("adding file: ", err)
+	}
+
+	if !reply.Success {
+		t.Fatal("expected success, got failure")
+	}
+
+	if reply.FileServerAddr != getFileServersResponse[0].Addr {
+		t.Fatal("expected file server addr", getFileServersResponse[0].Addr, "got", reply.FileServerAddr)
+	}
+
+	// More comprehensive tests for AddFile require a coupling
+	// with the distribution algorithm for files -> fileservers.
+
+	var findFileReply server.FindFileReply
+	err = ControllerClient.Call("Controller.FindFile", struct{ Name string }{Name: "testfile"}, &findFileReply)
+	if err != nil {
+		t.Fatal("finding file: ", err)
+	}
+
+	if !findFileReply.Found {
+		t.Fatal("expected file to be found")
+	}
+
+	if findFileReply.Location != getFileServersResponse[0].Addr {
+		t.Fatal("expected file server addr", getFileServersResponse[0].Addr, "got", findFileReply.Location)
+	}
 }

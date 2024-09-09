@@ -39,8 +39,13 @@ type AddFileArgs struct {
 }
 
 type AddFileReply struct {
-	Success bool
-	fileServerAddr string
+	Success        bool
+	FileServerAddr string
+}
+
+type FindFileReply struct {
+	Found    bool
+	Location string
 }
 
 type FileMetadata struct {
@@ -52,14 +57,16 @@ type FileMetadata struct {
 }
 
 type Controller struct {
-	AddrToIdx   map[string]int
-	FileServers []FileServerEntry
+	AddrToIdx     map[string]int
+	FileServers   []FileServerEntry
+	FileLocations map[string]string
 }
 
 func NewController() *Controller {
 	return &Controller{
-		AddrToIdx:   make(map[string]int),
-		FileServers: make([]FileServerEntry, 0),
+		AddrToIdx:     make(map[string]int),
+		FileServers:   make([]FileServerEntry, 0),
+		FileLocations: make(map[string]string),
 	}
 }
 
@@ -68,8 +75,13 @@ func (c *Controller) GetFileServers(args struct{}, reply *[]FileServerEntry) err
 	return nil
 }
 
-// TODO
-func (c *Controller) FindFile(args struct{}, reply *FileMetadata) error {
+func (c *Controller) FindFile(args struct{ Name string }, reply *FindFileReply) error {
+	if location, ok := c.FileLocations[args.Name]; ok {
+		reply.Found = true
+		reply.Location = location
+	} else {
+		reply.Found = false
+	}
 	return nil
 }
 
@@ -79,17 +91,20 @@ func (c *Controller) AddFile(args AddFileArgs, reply *AddFileReply) error {
 	var maxSpace int64 = 0
 	var maxSpaceIdx int = -1
 	for i, fileServer := range c.FileServers {
-		if fileServer.Data.Capacity - fileServer.Data.SizeUsed > maxSpace {
+		if fileServer.Data.Capacity-fileServer.Data.SizeUsed > maxSpace {
 			maxSpace = fileServer.Data.Capacity - fileServer.Data.SizeUsed
 			maxSpaceIdx = i
 		}
 	}
 
-	if maxSpaceIdx == -1 {
-		reply.Success = false
-	} else {
+	if maxSpaceIdx != -1 {
+		c.FileServers[maxSpaceIdx].Data.SizeUsed += args.Size
+		c.FileLocations[args.Name] = c.FileServers[maxSpaceIdx].Addr
+
 		reply.Success = true
-		reply.fileServerAddr = c.FileServers[maxSpaceIdx].Addr
+		reply.FileServerAddr = c.FileServers[maxSpaceIdx].Addr
+	} else {
+		reply.Success = false
 	}
 	return nil
 }
