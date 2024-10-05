@@ -7,7 +7,9 @@
 
 ### Features
 - [x] single machine fileserver
-- [ ] controller for storing metadata
+- [x] controller for storing metadata
 - [ ] client code
 - [ ] concurrency handling
+- [ ] directories
 - [ ] file chunking
+- [ ] multiple users

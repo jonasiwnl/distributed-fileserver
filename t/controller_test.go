@@ -81,8 +81,8 @@ func TestAddAndFindFile(t *testing.T) {
 		t.Fatal("expected success, got failure")
 	}
 
-	if reply.FileServerAddr != getFileServersResponse[0].Addr {
-		t.Fatal("expected file server addr", getFileServersResponse[0].Addr, "got", reply.FileServerAddr)
+	if reply.Address != getFileServersResponse[0].Addr {
+		t.Fatal("expected file server addr", getFileServersResponse[0].Addr, "got", reply.Address)
 	}
 
 	// More comprehensive tests for AddFile require a coupling
@@ -98,7 +98,43 @@ func TestAddAndFindFile(t *testing.T) {
 		t.Fatal("expected file to be found")
 	}
 
-	if findFileReply.Location != getFileServersResponse[0].Addr {
-		t.Fatal("expected file server addr", getFileServersResponse[0].Addr, "got", findFileReply.Location)
+	if findFileReply.Address != getFileServersResponse[0].Addr {
+		t.Fatal("expected file server addr", getFileServersResponse[0].Addr, "got", findFileReply.Address)
+	}
+}
+
+func TestRemoveFile(t *testing.T) {
+	var addFileReply server.AddFileReply
+	err := ControllerClient.Call("Controller.AddFile", server.AddFileArgs{Name: "testfile", Size: 1024}, &addFileReply)
+	if err != nil {
+		t.Fatal("adding file: ", err)
+	}
+
+	if !addFileReply.Success {
+		t.Fatal("expected success, got failure")
+	}
+
+	var removeFileReply server.RemoveFileReply
+	err = ControllerClient.Call("Controller.RemoveFile", server.RemoveFileArgs{Name: "testfile"}, &removeFileReply)
+	if err != nil {
+		t.Fatal("removing file: ", err)
+	}
+
+	if !removeFileReply.Found {
+		t.Fatal("expected file to be found")
+	}
+
+	if removeFileReply.Address != addFileReply.Address {
+		t.Fatal("expected file server addr", addFileReply.Address, "got", removeFileReply.Address)
+	}
+
+	var findFileReply server.FindFileReply
+	err = ControllerClient.Call("Controller.FindFile", struct{ Name string }{Name: "testfile"}, &findFileReply)
+	if err != nil {
+		t.Fatal("finding file: ", err)
+	}
+
+	if findFileReply.Found {
+		t.Fatal("expected file to not be found")
 	}
 }

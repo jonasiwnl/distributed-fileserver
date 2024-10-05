@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/rpc"
-	"time"
 )
 
 type FileServerMessageType int
@@ -39,34 +38,41 @@ type AddFileArgs struct {
 }
 
 type AddFileReply struct {
-	Success        bool
-	FileServerAddr string
+	Success bool
+	Address string
 }
 
 type FindFileReply struct {
-	Found    bool
-	Location string
+	Found   bool
+	Address string
 }
 
-type FileMetadata struct {
-	Name       string
-	Size       int64
-	Created    time.Time
-	Modified   time.Time
-	ChunkAddrs []string
+type RemoveFileArgs struct {
+	Name string
+}
+
+type RemoveFileReply struct {
+	Found   bool
+	Address string
+}
+
+type FileData struct {
+	Name    string
+	Size    int64
+	Address string
 }
 
 type Controller struct {
-	AddrToIdx     map[string]int
-	FileServers   []FileServerEntry
-	FileLocations map[string]string
+	AddrToIdx   map[string]int
+	FileServers []FileServerEntry
+	FileData    map[string]FileData
 }
 
 func NewController() *Controller {
 	return &Controller{
-		AddrToIdx:     make(map[string]int),
-		FileServers:   make([]FileServerEntry, 0),
-		FileLocations: make(map[string]string),
+		AddrToIdx:   make(map[string]int),
+		FileServers: make([]FileServerEntry, 0),
+		FileData:    make(map[string]FileData),
 	}
 }
 
@@ -76,9 +82,9 @@ func (c *Controller) GetFileServers(args struct{}, reply *[]FileServerEntry) err
 }
 
 func (c *Controller) FindFile(args struct{ Name string }, reply *FindFileReply) error {
-	if location, ok := c.FileLocations[args.Name]; ok {
+	if fileData, ok := c.FileData[args.Name]; ok {
 		reply.Found = true
-		reply.Location = location
+		reply.Address = fileData.Address
 	} else {
 		reply.Found = false
 	}
@@ -99,18 +105,28 @@ func (c *Controller) AddFile(args AddFileArgs, reply *AddFileReply) error {
 
 	if maxSpaceIdx != -1 {
 		c.FileServers[maxSpaceIdx].Data.SizeUsed += args.Size
-		c.FileLocations[args.Name] = c.FileServers[maxSpaceIdx].Addr
+		c.FileData[args.Name] = FileData{Name: args.Name, Size: args.Size, Address: c.FileServers[maxSpaceIdx].Addr}
 
 		reply.Success = true
-		reply.FileServerAddr = c.FileServers[maxSpaceIdx].Addr
+		reply.Address = c.FileServers[maxSpaceIdx].Addr
 	} else {
 		reply.Success = false
 	}
 	return nil
 }
 
-// TODO
-func (c *Controller) FindDir(args struct{}, reply *[]byte) error {
+func (c *Controller) RemoveFile(args RemoveFileArgs, reply *RemoveFileReply) error {
+	if fileData, ok := c.FileData[args.Name]; ok {
+		delete(c.FileData, args.Name)
+
+		fileServerIdx := c.AddrToIdx[fileData.Address]
+		c.FileServers[fileServerIdx].Data.SizeUsed -= fileData.Size
+
+		reply.Found = true
+		reply.Address = fileData.Address
+	} else {
+		reply.Found = false
+	}
 	return nil
 }
 
